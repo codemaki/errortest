@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Simulation API Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .api-category {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .category-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .api-button {
+            width: 100%;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .api-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .api-button:active {
+            transform: translateY(0);
+        }
+
+        .api-button.danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .api-button.warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .api-button.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .button-icon {
+            font-size: 18px;
+        }
+
+        .response-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .response-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .response-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .response-box.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .response-box.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Error Simulation API Tester</h1>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>API 호출 중...</div>
+        </div>
+
+        <div class="response-container">
+            <div class="response-title">Response</div>
+            <div class="response-box" id="response">
+API를 호출하면 여기에 결과가 표시됩니다.
+            </div>
+        </div>
+
+        <div class="api-grid">
+            <!-- 로그 관련 API -->
+            <div class="api-category">
+                <div class="category-title">로그 생성</div>
+                <button class="api-button" onclick="callApi('/api/error/log/error')">
+                    <span>ERROR 로그</span>
+                    <span class="button-icon">📝</span>
+                </button>
+                <button class="api-button" onclick="callApi('/api/error/log/warn')">
+                    <span>WARN 로그</span>
+                    <span class="button-icon">⚠️</span>
+                </button>
+                <button class="api-button" onclick="callApi('/api/error/log/exception')">
+                    <span>예외 로그 (스택 트레이스)</span>
+                    <span class="button-icon">💥</span>
+                </button>
+                <button class="api-button warning" onclick="callApiWithParam('/api/error/log/spam', 'count', 'count', 100)">
+                    <span>대량 에러 로그</span>
+                    <span class="button-icon">📢</span>
+                </button>
+                <div class="input-group">
+                    <input type="number" id="spamCount" value="100" placeholder="로그 개수">
+                </div>
+            </div>
+
+            <!-- 예외 발생 -->
+            <div class="api-category">
+                <div class="category-title">예외 발생</div>
+                <button class="api-button danger" onclick="callApi('/api/error/exception/npe')">
+                    <span>NullPointerException</span>
+                    <span class="button-icon">❌</span>
+                </button>
+                <button class="api-button danger" onclick="callApi('/api/error/exception/array')">
+                    <span>ArrayIndexOutOfBounds</span>
+                    <span class="button-icon">📊</span>
+                </button>
+                <button class="api-button danger" onclick="callApi('/api/error/exception/number')">
+                    <span>NumberFormatException</span>
+                    <span class="button-icon">🔢</span>
+                </button>
+                <button class="api-button danger" onclick="callApi('/api/error/exception/custom')">
+                    <span>Custom Business Exception</span>
+                    <span class="button-icon">🏢</span>
+                </button>
+                <button class="api-button danger" onclick="callApi('/api/error/exception/io')">
+                    <span>IOException</span>
+                    <span class="button-icon">📁</span>
+                </button>
+                <button class="api-button warning" onclick="callApi('/api/error/random')">
+                    <span>랜덤 에러</span>
+                    <span class="button-icon">🎲</span>
+                </button>
+            </div>
+
+            <!-- HTTP 상태 코드 -->
+            <div class="api-category">
+                <div class="category-title">HTTP 에러</div>
+                <button class="api-button" onclick="callApi('/api/error/http/400')">
+                    <span>400 Bad Request</span>
+                    <span class="badge">4xx</span>
+                </button>
+                <button class="api-button" onclick="callApi('/api/error/http/401')">
+                    <span>401 Unauthorized</span>
+                    <span class="badge">4xx</span>
+                </button>
+                <button class="api-button" onclick="callApi('/api/error/http/403')">
+                    <span>403 Forbidden</span>
+                    <span class="badge">4xx</span>
+                </button>
+                <button class="api-button" onclick="callApi('/api/error/http/404')">
+                    <span>404 Not Found</span>
+                    <span class="badge">4xx</span>
+                </button>
+                <button class="api-button danger" onclick="callApi('/api/error/http/500')">
+                    <span>500 Internal Server Error</span>
+                    <span class="badge">5xx</span>
+                </button>
+                <button class="api-button danger" onclick="callApi('/api/error/http/503')">
+                    <span>503 Service Unavailable</span>
+                    <span class="badge">5xx</span>
+                </button>
+            </div>
+
+            <!-- 치명적 에러 -->
+            <div class="api-category">
+                <div class="category-title">치명적 에러 ⚠️</div>
+                <button class="api-button danger" onclick="confirmAndCall('/api/error/fatal/stackoverflow', '애플리케이션이 응답하지 않을 수 있습니다.')">
+                    <span>StackOverflowError</span>
+                    <span class="button-icon">🌀</span>
+                </button>
+                <button class="api-button danger" onclick="confirmAndCall('/api/error/fatal/oom', '메모리가 부족해질 수 있습니다.')">
+                    <span>OutOfMemoryError</span>
+                    <span class="button-icon">💾</span>
+                </button>
+                <button class="api-button danger" onclick="confirmAndCall('/api/error/fatal/deadlock', '데드락이 발생합니다.')">
+                    <span>데드락 발생</span>
+                    <span class="button-icon">🔒</span>
+                </button>
+                <button class="api-button danger" onclick="callApiWithParam('/api/error/fatal/exit', 'code', 'exitCode', 1, '애플리케이션이 종료됩니다!')">
+                    <span>System.exit()</span>
+                    <span class="button-icon">🚪</span>
+                </button>
+                <div class="input-group">
+                    <input type="number" id="exitCode" value="1" placeholder="Exit Code">
+                </div>
+            </div>
+
+            <!-- 성능 테스트 -->
+            <div class="api-category">
+                <div class="category-title">성능 테스트</div>
+                <button class="api-button warning" onclick="callApiWithParam('/api/error/timeout/slow', 'seconds', 'slowSeconds', 5)">
+                    <span>느린 응답 (Timeout)</span>
+                    <span class="button-icon">🐌</span>
+                </button>
+                <div class="input-group">
+                    <input type="number" id="slowSeconds" value="5" placeholder="대기 시간(초)">
+                </div>
+
+                <button class="api-button warning" onclick="callApiWithParam('/api/error/load/cpu', 'seconds', 'cpuSeconds', 10)">
+                    <span>CPU 과부하</span>
+                    <span class="button-icon">🔥</span>
+                </button>
+                <div class="input-group">
+                    <input type="number" id="cpuSeconds" value="10" placeholder="부하 시간(초)">
+                </div>
+
+                <button class="api-button warning" onclick="callApiWithParam('/api/error/leak/memory', 'count', 'leakCount', 1000)">
+                    <span>메모리 누수</span>
+                    <span class="button-icon">💧</span>
+                </button>
+                <div class="input-group">
+                    <input type="number" id="leakCount" value="1000" placeholder="객체 개수">
+                </div>
+            </div>
+
+            <!-- 상태 확인 -->
+            <div class="api-category">
+                <div class="category-title">상태 확인</div>
+                <button class="api-button info" onclick="callApi('/api/error/status')">
+                    <span>애플리케이션 상태</span>
+                    <span class="button-icon">📊</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function callApi(url) {
+            const responseBox = document.getElementById('response');
+            const loading = document.getElementById('loading');
+
+            loading.classList.add('active');
+            responseBox.className = 'response-box';
+            responseBox.textContent = 'API 호출 중...';
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(url);
+                const duration = Date.now() - startTime;
+
+                let responseData;
+                const contentType = response.headers.get('content-type');
+
+                if (contentType && contentType.includes('application/json')) {
+                    responseData = await response.json();
+                } else {
+                    responseData = await response.text();
+                }
+
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    duration: duration + 'ms',
+                    timestamp: new Date().toLocaleString('ko-KR'),
+                    url: url,
+                    data: responseData
+                };
+
+                responseBox.textContent = JSON.stringify(result, null, 2);
+
+                if (response.ok) {
+                    responseBox.classList.add('success');
+                } else {
+                    responseBox.classList.add('error');
+                }
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                const errorResult = {
+                    error: error.message,
+                    duration: duration + 'ms',
+                    timestamp: new Date().toLocaleString('ko-KR'),
+                    url: url,
+                    note: '서버가 응답하지 않거나 네트워크 오류가 발생했습니다.'
+                };
+
+                responseBox.textContent = JSON.stringify(errorResult, null, 2);
+                responseBox.classList.add('error');
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function callApiWithParam(baseUrl, paramName, inputId, defaultValue, confirmMsg = null) {
+            if (confirmMsg && !confirm(confirmMsg)) {
+                return;
+            }
+
+            const inputElement = document.getElementById(inputId);
+            const paramValue = inputElement ? inputElement.value : defaultValue;
+            const url = `${baseUrl}?${paramName}=${paramValue}`;
+            callApi(url);
+        }
+
+        function confirmAndCall(url, message) {
+            if (confirm(`경고: ${message}\n\n계속하시겠습니까?`)) {
+                callApi(url);
+            }
+        }
+
+        // 페이지 로드 시 상태 확인
+        window.addEventListener('load', () => {
+            callApi('/api/error/status');
+        });
+    </script>
+</body>
+</html>
